@@ -189,7 +189,7 @@ void N_GrabTiccmds(void)
 		memcpy(&p->cmd, p->in_cmds + buf, sizeof(ticcmd_t));
 	}
 
-	VM_SetFloat(ui_vm, "sys", "gametic", gametic);
+	VM_SetFloat(ui_vm, "sys", "gametic", gametic / 2);
 
 	gametic++;
 }

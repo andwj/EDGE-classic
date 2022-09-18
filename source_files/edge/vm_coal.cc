@@ -431,7 +431,7 @@ void VM_LoadLumpOfCoal(int lump)
 void VM_LoadScripts()
 {
 	W_ReadCoalLumps();
-	VM_SetFloat(ui_vm, "sys", "gametic", gametic);
+	VM_SetFloat(ui_vm, "sys", "gametic", gametic / 2);
 	if (W_IsLumpInPwad("STBAR"))
 	{
 		VM_SetFloat(ui_vm, "hud", "custom_stbar", 1);

@@ -295,7 +295,7 @@ void HUD_CalcScrollTexCoords( float x_scroll, float y_scroll, float *tx1, float 
 {
 	float timeScale, adjustedScrollS, adjustedScrollT;
 
-	timeScale = gametic / 100.0f;
+	timeScale = gametic / 200.0f;
 
 	adjustedScrollS = x_scroll * timeScale;
 	adjustedScrollT = y_scroll * timeScale;

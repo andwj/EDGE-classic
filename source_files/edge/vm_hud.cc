@@ -165,7 +165,8 @@ static void HD_check_automap(coal::vm_c *vm, int argc)
 //
 static void HD_get_time(coal::vm_c *vm, int argc)
 {
-	vm->ReturnFloat((double) I_GetTime());
+	int time = I_GetTime() / 2;
+	vm->ReturnFloat((double) time);
 }
 
 
