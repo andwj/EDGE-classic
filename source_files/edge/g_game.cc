@@ -468,6 +468,28 @@ void G_BigStuff(void)
 
 void G_Ticker(void)
 {
+	bool player_only = (gametic & 1) == 1;
+
+	if (player_only)
+	{
+		switch (gamestate)
+		{
+			case GS_LEVEL:
+				// get commands
+				N_GrabTiccmds();
+
+				//!!!  P_Ticker();
+				break;
+
+			case GS_INTERMISSION:
+			case GS_FINALE:
+				N_GrabTiccmds();
+				break;
+		}
+
+		return;
+	}
+
 	// ANIMATE FLATS AND TEXTURES GLOBALLY
 	W_UpdateImageAnims();
 
