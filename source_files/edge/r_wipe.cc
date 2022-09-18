@@ -354,7 +354,7 @@ bool RGL_DoWipe(void)
 
 	// determine how many tics since we started.  If this is the first
 	// call to DoWipe() since InitWipe(), then the clock starts now.
-	int nowtime = I_GetTime();
+	int nowtime = I_GetTime() / 2;
 	int tics = 0;
 
 	if (cur_wipe_lasttime >= 0)
