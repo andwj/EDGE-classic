@@ -213,10 +213,10 @@ void P_AddSectorForce(sector_t *sec, bool is_wind, float x_mag, float y_mag)
 //
 // Executes all force effects for the current tic.
 //
-void P_RunForces(bool player_only)
+void P_RunForces(bool extra_tic)
 {
-	// TODO : may need updating
-	if (player_only)
+	// TODO: review what needs updating here for 70hz
+	if (extra_tic)
 		return;
 
 	std::vector<force_t *>::iterator FI;

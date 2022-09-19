@@ -29,7 +29,7 @@
 // Called by C_Ticker,
 // can call G_PlayerExited.
 // Carries out all thinking of monsters and players.
-void P_Ticker(bool player_only);
+void P_Ticker(bool extra_tic);
 
 void P_HubFastForward(void);
 

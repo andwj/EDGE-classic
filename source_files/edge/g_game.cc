@@ -468,9 +468,9 @@ void G_BigStuff(void)
 
 void G_Ticker(void)
 {
-	bool player_only = (gametic & 1) == 1;
+	bool extra_tic = (gametic & 1) == 1;
 
-	if (player_only)
+	if (extra_tic)
 	{
 		switch (gamestate)
 		{
