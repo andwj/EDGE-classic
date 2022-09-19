@@ -292,6 +292,9 @@ static void MovePlayer(player_t * player)
 	base_xy_speed = player->mo->speed / 32.0f;
 	base_z_speed  = player->mo->speed / 64.0f;
 
+	base_xy_speed *= 0.5;  // 70hz
+	base_z_speed  *= 0.5;
+
 	// Do not let the player control movement if not onground.
 	// -MH- 1998/06/18  unless he has the JetPack!
 

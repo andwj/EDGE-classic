@@ -734,8 +734,10 @@ void P_CalcFullProperties(const mobj_t *mo, region_properties_t *new_p)
 //
 // P_XYMovement  
 //
-static void P_XYMovement(mobj_t * mo, const region_properties_t *props)
+static void P_XYMovement(mobj_t * mo, const region_properties_t *props, bool extra_tic)
 {
+	bool do_extra = mo->player != NULL;
+
 	float orig_x = mo->x;
 	float orig_y = mo->y;
 
@@ -762,6 +764,12 @@ static void P_XYMovement(mobj_t * mo, const region_properties_t *props)
 
 	float xmove = mo->mom.x;
 	float ymove = mo->mom.y;
+
+	if (do_extra)  // 70hz
+	{
+		xmove *= 0.5;
+		ymove *= 0.5;
+	}
 
 	// -AJA- 1999/07/31: Ride that rawhide :->
 	if (mo->above_mo && !(mo->above_mo->flags & MF_FLOAT) &&
@@ -987,17 +995,20 @@ static void P_XYMovement(mobj_t * mo, const region_properties_t *props)
 	//      it's not worth playing - a bit like having auto-aim
 	//      permanently off (as most real people are not crack-shots!)
 	//
+	float friction = props->friction;
+
 	if ((mo->z > mo->floorz) && !(mo->on_ladder >= 0) &&
 		!(mo->player && mo->player->powers[PW_Jetpack] > 0))
 	{
 		// apply drag when airborne
-		mo->mom.x *= props->drag;
-		mo->mom.y *= props->drag;
+		friction = props->drag;
 	}
-	else
+
+	// 70hz : apply friction every other tic
+	if (! extra_tic)
 	{
-		mo->mom.x *= props->friction;
-		mo->mom.y *= props->friction;
+		mo->mom.x *= friction;
+		mo->mom.y *= friction;
 	}
 
 	if (mo->player)
@@ -1024,8 +1035,10 @@ static void P_XYMovement(mobj_t * mo, const region_properties_t *props)
 //
 // P_ZMovement
 //
-static void P_ZMovement(mobj_t * mo, const region_properties_t *props)
+static void P_ZMovement(mobj_t * mo, const region_properties_t *props, bool extra_tic)
 {
+	bool do_extra = mo->player != NULL;
+
 	float dist;
 	float delta;
 	float zmove;
@@ -1046,7 +1059,12 @@ static void P_ZMovement(mobj_t * mo, const region_properties_t *props)
 
 	zmove = mo->mom.z * (1.0f - props->viscosity);
 
-	// adjust height
+	if (do_extra)  // 70hz
+	{
+		zmove *= 0.5;
+	}
+
+	// adjust vertical position
 	mo->z += zmove;
 
 	if (mo->flags & MF_FLOAT && mo->target)
@@ -1158,7 +1176,8 @@ static void P_ZMovement(mobj_t * mo, const region_properties_t *props)
 			!(mo->player && mo->player->powers[PW_Jetpack] > 0) &&
 			!(mo->on_ladder >= 0))
 		{
-			mo->mom.z -= gravity;
+			if (extra_tic)
+				mo->mom.z -= gravity;
 		}
 	}
 
@@ -1243,7 +1262,8 @@ static void P_ZMovement(mobj_t * mo, const region_properties_t *props)
 			!(mo->player && mo->player->powers[PW_Jetpack] > 0) &&
 			!(mo->on_ladder >= 0))
 		{
-			mo->mom.z += -gravity;
+			if (extra_tic)
+				mo->mom.z += -gravity;
 		}
 	}
 
@@ -1277,7 +1297,7 @@ static void P_ZMovement(mobj_t * mo, const region_properties_t *props)
 //
 #define MAX_THINK_LOOP  8
 
-static void P_MobjThinker(mobj_t * mobj, bool player_only)
+static void P_MobjThinker(mobj_t * mobj, bool extra_tic)
 {
 	const region_properties_t *props;
 	region_properties_t player_props;
@@ -1290,7 +1310,7 @@ static void P_MobjThinker(mobj_t * mobj, bool player_only)
 
 	mobj->ClearStaleRefs();
 
-if (! player_only)
+if (! extra_tic)
 {
 
 	mobj->visibility = (15 * mobj->visibility + mobj->vis_target)  / 16;
@@ -1335,7 +1355,7 @@ if (! player_only)
 
 		props = &player_props;
 	}
-	else if (! player_only)
+	else if (! extra_tic)
 	{
 		props = mobj->props;
 
@@ -1361,19 +1381,19 @@ if (! player_only)
 	}
 
 // momentum movement
-if (!player_only || mobj->player)
+if (!extra_tic || mobj->player)
 {
 
 	if (mobj->mom.x != 0 || mobj->mom.y != 0 || mobj->player)
 	{
-		P_XYMovement(mobj, props);
+		P_XYMovement(mobj, props, extra_tic);
 
 		if (mobj->isRemoved()) return;
 	}
 
 	if ((mobj->z != mobj->floorz) || mobj->mom.z != 0) //  || mobj->ride_em)
 	{
-		P_ZMovement(mobj, props);
+		P_ZMovement(mobj, props, extra_tic);
 
 		if (mobj->isRemoved()) return;
 	}
@@ -1381,7 +1401,7 @@ if (!player_only || mobj->player)
 }
 
 	// FIXME factor out the player-related code from the rest
-	if (player_only)
+	if (extra_tic)
 		return;
 
 
@@ -1463,7 +1483,7 @@ if (!player_only || mobj->player)
 //
 // Cycle through all mobjs and let them think.
 //
-void P_RunMobjThinkers(bool player_only)
+void P_RunMobjThinkers(bool extra_tic)
 {
 	mobj_t *mo;
 	mobj_t *next;
@@ -1472,7 +1492,7 @@ void P_RunMobjThinkers(bool player_only)
 	{
 		next = mo->next;
 
-		P_MobjThinker(mo, player_only);
+		P_MobjThinker(mo, extra_tic);
 	}
 
 	P_RemoveQueuedMobjs(false);
