@@ -736,7 +736,11 @@ void P_CalcFullProperties(const mobj_t *mo, region_properties_t *new_p)
 //
 static void P_XYMovement(mobj_t * mo, const region_properties_t *props, bool extra_tic)
 {
-	bool do_extra = mo->player != NULL;
+	bool do_extra = mo->player != NULL;  // 70hz
+
+	// missiles should run every tic too
+	if (mo->flags & MF_MISSILE)
+		do_extra = true;
 
 	float orig_x = mo->x;
 	float orig_y = mo->y;
@@ -1037,7 +1041,11 @@ static void P_XYMovement(mobj_t * mo, const region_properties_t *props, bool ext
 //
 static void P_ZMovement(mobj_t * mo, const region_properties_t *props, bool extra_tic)
 {
-	bool do_extra = mo->player != NULL;
+	bool do_extra = mo->player != NULL;  // 70Hz
+
+	// missiles should run every tic too
+	if (mo->flags & MF_MISSILE)
+		do_extra = true;
 
 	float dist;
 	float delta;
@@ -1357,7 +1365,7 @@ if (! extra_tic)
 
 		props = &player_props;
 	}
-	else if (! extra_tic)
+	else
 	{
 		props = mobj->props;
 
@@ -1369,6 +1377,9 @@ if (! extra_tic)
 			if (!((mobj->flags & MF_NOGRAVITY) || (flags & SECSP_PushAll))  &&
 				(mobj->z <= mobj->floorz + 1.0f || (flags & SECSP_WholeRegion)))
 			{
+				if (! extra_tic)
+				{
+
 				float push_mul = 1.0f;
 
 				SYS_ASSERT(mobj->info->mass > 0);
@@ -1378,12 +1389,18 @@ if (! extra_tic)
 				mobj->mom.x += push_mul * props->push.x;
 				mobj->mom.y += push_mul * props->push.y;
 				mobj->mom.z += push_mul * props->push.z;
+
+				}
 			}
 		}
 	}
 
 // momentum movement
-if (!extra_tic || mobj->player)
+	bool do_extra = mobj->player != NULL;  // 70Hz
+	if (mobj->flags & MF_MISSILE)
+		do_extra = true;
+
+if (!extra_tic || do_extra)
 {
 
 	if (mobj->mom.x != 0 || mobj->mom.y != 0 || mobj->player)
