@@ -203,7 +203,7 @@ I_Debugf("Jump:%d bob_z:%1.2f  z:%1.2f  height:%1.2f delta:%1.2f --> viewz:%1.3f
 
 void P_PlayerJump(player_t *pl, float dz, int wait)
 {
-	pl->mo->mom.z += pl->mo->info->jumpheight / 1.4f;
+	pl->mo->mom.z += pl->mo->info->jumpheight / (1.25f);  // 70hz
 
 	if (pl->jumpwait < wait)
 		pl->jumpwait = wait;
@@ -228,7 +228,7 @@ void P_PlayerJump(player_t *pl, float dz, int wait)
 }
 
 
-static void MovePlayer(player_t * player)
+static void MovePlayer(player_t * player, bool extra_tic)
 {
 	ticcmd_t *cmd;
 	mobj_t *mo = player->mo;
@@ -391,6 +391,9 @@ static void MovePlayer(player_t * player)
 	// -ACB- 1998/08/09 Check that jumping is allowed in the currmap
 	//                  Make player pause before jumping again
 
+if (! extra_tic)
+{
+
 	if (level_flags.jump && mo->info->jumpheight > 0 &&
 	    (cmd->upwardmove > 4))
 	{
@@ -400,6 +403,7 @@ static void MovePlayer(player_t * player)
 			             player->mo->info->jump_delay);
 		}
 	}
+}
 
 	// EDGE Feature: Crouching
 
@@ -410,7 +414,7 @@ static void MovePlayer(player_t * player)
 	{
 		if (mo->height > mo->info->crouchheight)
 		{
-			mo->height = MAX(mo->height - 2.0f, mo->info->crouchheight);
+			mo->height = MAX(mo->height - 2.0f / 2.0, mo->info->crouchheight);  // 70hz
 
 			// update any things near the player
 			P_ChangeThingSize(mo);
@@ -422,10 +426,12 @@ static void MovePlayer(player_t * player)
 	{
 		if (mo->height < mo->info->height)
 		{
+			float new_height = MIN(mo->height + 2 / 2, mo->info->height);  // 70hz
+
 			// prevent standing up inside a solid area
-			if ((mo->flags & MF_NOCLIP) || mo->z+mo->height+2 <= mo->ceilingz)
+			if ((mo->flags & MF_NOCLIP) || mo->z + new_height <= mo->ceilingz)
 			{
-				mo->height = MIN(mo->height + 2, mo->info->height);
+				mo->height = new_height;
 
 				// update any things near the player
 				P_ChangeThingSize(mo);
@@ -730,7 +736,7 @@ if (extra_tic)
 		player->mo->reactiontime -= subtract;
 
 	if (player->mo->reactiontime == 0)
-		MovePlayer(player);
+		MovePlayer(player, extra_tic);
 
 	CalcHeight(player, extra_tic);
 
