@@ -98,7 +98,7 @@ static sfx_t * sfx_jprise;
 static sfx_t * sfx_jpdown;
 static sfx_t * sfx_jpflow;
 
-static void CalcHeight(player_t * player)
+static void CalcHeight(player_t * player, bool extra_tic)
 {
 	bool onground = player->mo->z <= player->mo->floorz;
 
@@ -135,7 +135,7 @@ static void CalcHeight(player_t * player)
 	// ----CALCULATE VIEWHEIGHT----
 	if (player->playerstate == PST_LIVE)
 	{
-		player->viewheight += player->deltaviewheight;
+		player->viewheight += player->deltaviewheight * 0.5;  // 70hz
 
 		if (player->viewheight > player->std_viewheight)
 		{
@@ -154,7 +154,8 @@ static void CalcHeight(player_t * player)
 		{
 			// use a weird number to minimise chance of hitting
 			// zero when deltaviewheight goes neg -> positive.
-			player->deltaviewheight += 0.24162f;
+			if (! extra_tic)
+				player->deltaviewheight += 0.24162f;
 		}
 	}
 
@@ -454,9 +455,9 @@ static void MovePlayer(player_t * player)
 }
 
 
-static void DeathThink(player_t * player, bool player_only)
+static void DeathThink(player_t * player, bool extra_tic)
 {
-	int subtract = player_only ? 0 : 1;
+	int subtract = extra_tic ? 0 : 1;
 
 	// fall on your face when dying.
 
@@ -469,7 +470,7 @@ static void DeathThink(player_t * player, bool player_only)
 	// -AJA- 1999/12/07: don't die mid-air.
 	player->powers[PW_Jetpack] = 0;
 
-	if (! player_only)
+	if (! extra_tic)
 		P_MovePsprites(player);
 
 	// fall to the ground
@@ -481,7 +482,7 @@ static void DeathThink(player_t * player, bool player_only)
 	player->deltaviewheight = 0.0f;
 	player->kick_offset = 0.0f;
 
-	CalcHeight(player);
+	CalcHeight(player, extra_tic);
 
 	if (player->attacker && player->attacker != player->mo)
 	{
@@ -665,7 +666,7 @@ bool P_PlayerSwitchWeapon(player_t *player, weapondef_c *choice)
 }
 
 
-void P_PlayerThink(player_t * player, bool player_only)
+void P_PlayerThink(player_t * player, bool extra_tic)
 {
 	ticcmd_t * cmd = &player->cmd;
 
@@ -703,7 +704,7 @@ void P_PlayerThink(player_t * player, bool player_only)
 		player->mo->flags &= ~MF_NOCLIP;
 
 	// chain saw run forward
-if (player_only)
+if (extra_tic)
 {
 	if (player->mo->flags & MF_JUSTATTACKED)
 	{
@@ -716,11 +717,11 @@ if (player_only)
 
 	if (player->playerstate == PST_DEAD)
 	{
-		DeathThink(player, player_only);
+		DeathThink(player, extra_tic);
 		return;
 	}
 
-	int subtract = player_only ? 0 : 1;
+	int subtract = extra_tic ? 0 : 1;
 
 	// Move/Look around.  Reactiontime is used to prevent movement for a
 	// bit after a teleport.
@@ -731,7 +732,7 @@ if (player_only)
 	if (player->mo->reactiontime == 0)
 		MovePlayer(player);
 
-	CalcHeight(player);
+	CalcHeight(player, extra_tic);
 
 	// Reset environmental FX in case player has left sector in which they apply - Dasho
 	vacuum_sfx = false;
@@ -796,7 +797,7 @@ if (player_only)
 		cmd->extbuttons & EBT_INVUSE ? 1 : 0, cmd->extbuttons & EBT_INVNEXT ? 1 : 0);
 
 	// FIXME separate code more cleanly
-	if (player_only)
+	if (extra_tic)
 		return;
 
 	// decrement jumpwait counter

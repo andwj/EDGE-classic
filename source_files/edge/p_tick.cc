@@ -44,7 +44,7 @@ int leveltime;
 bool fast_forward_active;
 
 
-void P_Ticker(bool player_only)
+void P_Ticker(bool extra_tic)
 {
 	if (paused)
 		return;
@@ -58,15 +58,15 @@ void P_Ticker(bool player_only)
 
 	for (int pnum = 0; pnum < MAXPLAYERS; pnum++)
 		if (players[pnum])
-			P_PlayerThink(players[pnum], player_only);
+			P_PlayerThink(players[pnum], extra_tic);
 
-	if (! player_only)
+	if (! extra_tic)
 		RAD_RunTriggers();
 
-	P_RunForces(player_only);
-	P_RunMobjThinkers(player_only);
+	P_RunForces(extra_tic);
+	P_RunMobjThinkers(extra_tic);
 
-	if (player_only)
+	if (extra_tic)
 		return;
 
 	P_RunLights();

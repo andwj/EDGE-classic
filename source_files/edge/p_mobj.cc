@@ -1109,7 +1109,7 @@ static void P_ZMovement(mobj_t * mo, const region_properties_t *props, bool extr
 			{
 				// Squat down. Decrease viewheight for a moment after hitting the
 				// ground (hard), and utter appropriate sound.
-				mo->player->deltaviewheight = zmove / 8.0f;
+				mo->player->deltaviewheight = zmove / 8.0f * 2.0;  // 70hz
 				S_StartFX(mo->info->oof_sound, P_MobjGetSfxCategory(mo), mo);
 				P_HitFloor(mo);
 			}
