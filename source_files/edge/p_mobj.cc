@@ -1176,7 +1176,8 @@ static void P_ZMovement(mobj_t * mo, const region_properties_t *props, bool extr
 			!(mo->player && mo->player->powers[PW_Jetpack] > 0) &&
 			!(mo->on_ladder >= 0))
 		{
-			if (extra_tic)
+			// 70hz : apply gravity only on normal tics
+			if (! extra_tic)
 				mo->mom.z -= gravity;
 		}
 	}
@@ -1262,7 +1263,8 @@ static void P_ZMovement(mobj_t * mo, const region_properties_t *props, bool extr
 			!(mo->player && mo->player->powers[PW_Jetpack] > 0) &&
 			!(mo->on_ladder >= 0))
 		{
-			if (extra_tic)
+			// 70hz : apply gravity only on normal tics
+			if (! extra_tic)
 				mo->mom.z += -gravity;
 		}
 	}
