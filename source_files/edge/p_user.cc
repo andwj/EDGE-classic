@@ -451,8 +451,10 @@ static void MovePlayer(player_t * player)
 }
 
 
-static void DeathThink(player_t * player)
+static void DeathThink(player_t * player, bool player_only)
 {
+	int subtract = player_only ? 0 : 1;
+
 	// fall on your face when dying.
 
 	float dx, dy, dz;
@@ -464,11 +466,12 @@ static void DeathThink(player_t * player)
 	// -AJA- 1999/12/07: don't die mid-air.
 	player->powers[PW_Jetpack] = 0;
 
-	P_MovePsprites(player);
+	if (! player_only)
+		P_MovePsprites(player);
 
 	// fall to the ground
 	if (player->viewheight > player->std_viewheight)
-		player->viewheight -= 1.0f;
+		player->viewheight -= 1.0f / 2.0;
 	else if (player->viewheight < player->std_viewheight)
 		player->viewheight = player->std_viewheight;
 
@@ -499,39 +502,39 @@ static void DeathThink(player_t * player)
 			player->mo->vertangle = M_ATan(slope);
 
 			if (player->damagecount > 0)
-				player->damagecount--;
+				player->damagecount -= subtract;
 		}
 		else 
 		{
 			if (delta < ANG180)
-				delta /= 5;
+				delta /= (5 * 2);
 			else
-				delta = (angle_t)(0 - (angle_t)(0 - delta) / 5);
+				delta = (angle_t)(0 - (angle_t)(0 - delta) / (5 * 2));
 			
-			if (delta > ANG5 && delta < (angle_t)(0 - ANG5))
-				delta = (delta < ANG180) ? ANG5 : (angle_t)(0 - ANG5);
+			if (delta > ANG5/2 && delta < (angle_t)(0 - ANG5/2))
+				delta = (delta < ANG180) ? ANG5/2 : (angle_t)(0 - ANG5/2);
 
 			if (delta_s < ANG180)
-				delta_s /= 5;
+				delta_s /= (5 * 2);
 			else
-				delta_s = (angle_t)(0 - (angle_t)(0 - delta_s) / 5);
+				delta_s = (angle_t)(0 - (angle_t)(0 - delta_s) / (5 * 2));
 			
-			if (delta_s > (ANG5/2) && delta_s < (angle_t)(0 - ANG5/2))
-				delta_s = (delta_s < ANG180) ? (ANG5/2) : (angle_t)(0 - ANG5/2);
+			if (delta_s > (ANG5/4) && delta_s < (angle_t)(0 - ANG5/4))
+				delta_s = (delta_s < ANG180) ? (ANG5/4) : (angle_t)(0 - ANG5/4);
 
 			player->mo->angle += delta;
 			player->mo->vertangle += delta_s;
 
 			if (player->damagecount && (leveltime % 3) == 0)
-				player->damagecount--;
+				player->damagecount -= subtract;
 		}
 	}
 	else if (player->damagecount > 0)
-		player->damagecount--;
+		player->damagecount -= subtract;
 
 	// -AJA- 1999/08/07: Fade out armor points too.
 	if (player->bonuscount)
-		player->bonuscount--;
+		player->bonuscount -= subtract;
 
 	P_UpdatePowerups(player);
 
@@ -659,9 +662,9 @@ bool P_PlayerSwitchWeapon(player_t *player, weapondef_c *choice)
 }
 
 
-void P_PlayerThink(player_t * player)
+void P_PlayerThink(player_t * player, bool player_only)
 {
-	ticcmd_t *cmd;
+	ticcmd_t * cmd = &player->cmd;
 
 	SYS_ASSERT(player->mo);
 
@@ -697,7 +700,8 @@ void P_PlayerThink(player_t * player)
 		player->mo->flags &= ~MF_NOCLIP;
 
 	// chain saw run forward
-	cmd = &player->cmd;
+if (player_only)
+{
 	if (player->mo->flags & MF_JUSTATTACKED)
 	{
 		cmd->angleturn = 0;
@@ -705,19 +709,23 @@ void P_PlayerThink(player_t * player)
 		cmd->sidemove = 0;
 		player->mo->flags &= ~MF_JUSTATTACKED;
 	}
+}
 
 	if (player->playerstate == PST_DEAD)
 	{
-		DeathThink(player);
+		DeathThink(player, player_only);
 		return;
 	}
+
+	int subtract = player_only ? 0 : 1;
 
 	// Move/Look around.  Reactiontime is used to prevent movement for a
 	// bit after a teleport.
 
 	if (player->mo->reactiontime)
-		player->mo->reactiontime--;
-	else
+		player->mo->reactiontime -= subtract;
+
+	if (player->mo->reactiontime == 0)
 		MovePlayer(player);
 
 	CalcHeight(player);
@@ -784,6 +792,10 @@ void P_PlayerThink(player_t * player)
 	VM_SetVector(ui_vm, "player", "inventory_event_handler", cmd->extbuttons & EBT_INVPREV ? 1 : 0, 
 		cmd->extbuttons & EBT_INVUSE ? 1 : 0, cmd->extbuttons & EBT_INVNEXT ? 1 : 0);
 
+	// FIXME separate code more cleanly
+	if (player_only)
+		return;
+
 	// decrement jumpwait counter
 	if (player->jumpwait > 0)
 		player->jumpwait--;
@@ -792,7 +804,7 @@ void P_PlayerThink(player_t * player)
 		player->splashwait--;
 
 	// cycle psprites
-	P_MovePsprites(player);
+		P_MovePsprites(player);
 
 	// Counters, time dependend power ups.
 

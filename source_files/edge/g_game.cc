@@ -477,8 +477,7 @@ void G_Ticker(void)
 			case GS_LEVEL:
 				// get commands
 				N_GrabTiccmds();
-
-				//!!!  P_Ticker();
+				P_Ticker(true);
 				break;
 
 			case GS_INTERMISSION:
@@ -504,7 +503,7 @@ void G_Ticker(void)
 			// get commands
 			N_GrabTiccmds();
 
-			P_Ticker();
+			P_Ticker(false);
 			AM_Ticker();
 			HU_Ticker();
 			RAD_Ticker();

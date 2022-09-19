@@ -1277,7 +1277,7 @@ static void P_ZMovement(mobj_t * mo, const region_properties_t *props)
 //
 #define MAX_THINK_LOOP  8
 
-static void P_MobjThinker(mobj_t * mobj)
+static void P_MobjThinker(mobj_t * mobj, bool player_only)
 {
 	const region_properties_t *props;
 	region_properties_t player_props;
@@ -1289,6 +1289,9 @@ static void P_MobjThinker(mobj_t * mobj)
 	SYS_ASSERT(mobj->refcount >= 0);
 
 	mobj->ClearStaleRefs();
+
+if (! player_only)
+{
 
 	mobj->visibility = (15 * mobj->visibility + mobj->vis_target)  / 16;
 	mobj->dlight.r   = (15 * mobj->dlight.r + mobj->dlight.target) / 16;
@@ -1316,6 +1319,8 @@ static void P_MobjThinker(mobj_t * mobj)
 		if (mobj->isRemoved()) return;
 	}
 
+}
+
 	// determine properties, & handle push sectors
 
 	SYS_ASSERT(mobj->props);
@@ -1330,7 +1335,7 @@ static void P_MobjThinker(mobj_t * mobj)
 
 		props = &player_props;
 	}
-	else
+	else if (! player_only)
 	{
 		props = mobj->props;
 
@@ -1355,7 +1360,10 @@ static void P_MobjThinker(mobj_t * mobj)
 		}
 	}
 
-	// momentum movement
+// momentum movement
+if (!player_only || mobj->player)
+{
+
 	if (mobj->mom.x != 0 || mobj->mom.y != 0 || mobj->player)
 	{
 		P_XYMovement(mobj, props);
@@ -1369,6 +1377,13 @@ static void P_MobjThinker(mobj_t * mobj)
 
 		if (mobj->isRemoved()) return;
 	}
+
+}
+
+	// FIXME factor out the player-related code from the rest
+	if (player_only)
+		return;
+
 
 	if (mobj->fuse >= 0)
 	{
@@ -1448,7 +1463,7 @@ static void P_MobjThinker(mobj_t * mobj)
 //
 // Cycle through all mobjs and let them think.
 //
-void P_RunMobjThinkers(void)
+void P_RunMobjThinkers(bool player_only)
 {
 	mobj_t *mo;
 	mobj_t *next;
@@ -1457,7 +1472,7 @@ void P_RunMobjThinkers(void)
 	{
 		next = mo->next;
 
-		P_MobjThinker(mo);
+		P_MobjThinker(mo, player_only);
 	}
 
 	P_RemoveQueuedMobjs(false);

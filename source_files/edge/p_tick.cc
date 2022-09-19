@@ -43,10 +43,8 @@ int leveltime;
 
 bool fast_forward_active;
 
-//
-// P_Ticker
-//
-void P_Ticker(void)
+
+void P_Ticker(bool player_only)
 {
 	if (paused)
 		return;
@@ -60,12 +58,17 @@ void P_Ticker(void)
 
 	for (int pnum = 0; pnum < MAXPLAYERS; pnum++)
 		if (players[pnum])
-			P_PlayerThink(players[pnum]);
+			P_PlayerThink(players[pnum], player_only);
 
-	RAD_RunTriggers();
+	if (! player_only)
+		RAD_RunTriggers();
 
-	P_RunForces();
-	P_RunMobjThinkers();
+	P_RunForces(player_only);
+	P_RunMobjThinkers(player_only);
+
+	if (player_only)
+		return;
+
 	P_RunLights();
 	P_RunActivePlanes();
 	P_RunActiveSliders();
@@ -96,7 +99,7 @@ void P_HubFastForward(void)
 	}
 
 	for (int k = 0; k < TICRATE / 3; k++)
-		P_Ticker();
+		P_Ticker(false);
 
 	fast_forward_active = false;
 }
