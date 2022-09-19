@@ -365,7 +365,7 @@ void E_BuildTiccmd(ticcmd_t * cmd)
 	// Turning
 	if (! strafe)
 	{
-		float turn = angleturn[t_speed] * joy_forces[AXIS_TURN];
+		float turn = angleturn[t_speed]/2 * joy_forces[AXIS_TURN];  //70hz
 		
 		turn *= speed_factors[var_turnspeed];
 
@@ -378,7 +378,7 @@ void E_BuildTiccmd(ticcmd_t * cmd)
 	// MLook
 	{
 		// -ACB- 1998/07/02 Use VertAngle for Look/up down.
-		float mlook = mlookturn[m_speed] * joy_forces[AXIS_MLOOK];
+		float mlook = mlookturn[m_speed]/2 * joy_forces[AXIS_MLOOK];  //70Hz
 
 		mlook *= speed_factors[var_mlookspeed];
 
@@ -387,7 +387,7 @@ void E_BuildTiccmd(ticcmd_t * cmd)
 		cmd->mlookturn = I_ROUND(mlook);
 	}
 
-	// Forward
+	// Forward   [ no change for 70hz ]
 	{
 		float forward = forwardmove[speed] * joy_forces[AXIS_FORWARD];
 
@@ -401,12 +401,12 @@ void E_BuildTiccmd(ticcmd_t * cmd)
 		cmd->forwardmove = I_ROUND(forward);
 	}
 
-	// Sideways
+	// Sideways   [ no change for 70hz ]
 	{
-		float side = sidemove[speed] * joy_forces[AXIS_STRAFE];
+		float side = sidemove[speed] * joy_forces[AXIS_STRAFE];  // no change for 70hz
 
 		if (strafe)
-			side += sidemove[speed] * joy_forces[AXIS_TURN];
+			side += sidemove[speed] * joy_forces[AXIS_TURN];  // no change for 70hz
 
 		side *= speed_factors[var_sidespeed];
 
@@ -421,7 +421,7 @@ void E_BuildTiccmd(ticcmd_t * cmd)
 		cmd->sidemove = I_ROUND(side);
 	}
 
-	// Upwards  -MH- 1998/08/18 Fly Up/Down movement
+	// Upwards  [ no change for 70hz ]  -MH- 1998/08/18 Fly Up/Down movement
 	{
 		float upward = upwardmove[speed] * joy_forces[AXIS_FLY];
 
