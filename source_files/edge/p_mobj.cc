@@ -771,8 +771,8 @@ static void P_XYMovement(mobj_t * mo, const region_properties_t *props, bool ext
 
 	if (do_extra)  // 70hz
 	{
-		xmove *= 0.5;
-		ymove *= 0.5;
+		xmove *= 0.52;
+		ymove *= 0.52;
 	}
 
 	// -AJA- 1999/07/31: Ride that rawhide :->
