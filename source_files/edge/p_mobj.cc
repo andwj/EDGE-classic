@@ -1008,12 +1008,14 @@ static void P_XYMovement(mobj_t * mo, const region_properties_t *props, bool ext
 		friction = props->drag;
 	}
 
-	// 70hz : apply friction every other tic
-	if (! extra_tic)
+	// 70hz : adjust friction to account for extra tic
+	if (do_extra)
 	{
-		mo->mom.x *= friction;
-		mo->mom.y *= friction;
+		friction = sqrt(friction);
 	}
+
+	mo->mom.x *= friction;
+	mo->mom.y *= friction;
 
 	if (mo->player)
 	{
