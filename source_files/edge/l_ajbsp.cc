@@ -62,7 +62,11 @@ public:
 
 	void ShowMap(const char *name)
 	{
-		I_Printf("fooing the thing on %s\n", name);
+		std::string msg = "Building nodes for ";
+		msg += name;
+		msg += "...\n";
+
+		E_ProgressMessage(msg.c_str());
 	}
 
 	//
