@@ -2962,7 +2962,9 @@ void P_SetupLevel(void)
 	seen_monsters.clear();
 
 	// get lump for map header e.g. MAP01
-	int lumpnum = W_GetNumForName(currmap->lump.c_str());
+	int lumpnum = W_CheckNumForName_MAP(currmap->lump.c_str());
+	if (lumpnum < 0)
+		I_Error("No such level: %s\n", currmap->lump.c_str());
 
 	// get lump for XGL3 nodes from an XWA file
 	int xgl_lump = W_CheckNumForName_XGL(currmap->lump.c_str());

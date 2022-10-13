@@ -431,10 +431,6 @@ struct Compare_lump_pred
 		const lumpinfo_t& C = lumpinfo[A];
 		const lumpinfo_t& D = lumpinfo[B];
 
-		// -AJA- 2022: AWFUL HACK for xwa files (FIXME)
-		if ((C.kind == LMKIND_XGL) != (D.kind == LMKIND_XGL))
-			return C.kind == LMKIND_XGL;
-
 		// increasing name
 		int cmp = strcmp(C.name, D.name);
 		if (cmp != 0) return (cmp < 0);
@@ -1620,6 +1616,37 @@ int W_CheckNumForName_XGL(const char *name)
 	for (i = (int)lumpinfo.size()-1 ; i >= 0 ; i--)
 	{
 		if (lumpinfo[i].kind == LMKIND_XGL)
+			if (strncmp(lumpinfo[i].name, buf, 8) == 0)
+				return i;
+	}
+
+	return -1; // not found
+}
+
+
+int W_CheckNumForName_MAP(const char *name)
+{
+	// avoids anything in XGL namespace
+
+	int i;
+	char buf[9];
+
+	if (strlen(name) > 8)
+	{
+		I_Warning("W_CheckNumForName: Name '%s' longer than 8 chars!\n", name);
+		return -1;
+	}
+
+	for (i = 0; name[i]; i++)
+	{
+		buf[i] = toupper(name[i]);
+	}
+	buf[i] = 0;
+
+	// search backwards
+	for (i = (int)lumpinfo.size()-1 ; i >= 0 ; i--)
+	{
+		if (lumpinfo[i].kind != LMKIND_XGL)
 			if (strncmp(lumpinfo[i].name, buf, 8) == 0)
 				return i;
 	}
