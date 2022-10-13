@@ -26,22 +26,66 @@
 
 #include "i_defs.h"
 
-#ifdef HAVE_EDGE_AJBSP_H
-#include "edge_ajbsp.h"
-#else
-#include "edge_ajbsp.h"
-#endif
-
 #include "e_main.h"
 #include "l_ajbsp.h"
 
-static const nodebuildfuncs_t display_funcs =
+// AJBSP
+#include "bsp.h"
+
+#define MSG_BUF_LEN  1024
+
+class ec_buildinfo_t : public buildinfo_t
 {
-	I_Printf,
-	I_Debugf,
-	I_Error,
-	E_ProgressMessage
+public:
+	void Print(int level, const char *fmt, ...)
+	{
+		if (level > 1)
+			return;
+
+		va_list arg_ptr;
+
+		static char buffer[MSG_BUF_LEN];
+
+		va_start(arg_ptr, fmt);
+		vsnprintf(buffer, MSG_BUF_LEN-1, fmt, arg_ptr);
+		va_end(arg_ptr);
+
+		buffer[MSG_BUF_LEN-1] = 0;
+
+		I_Printf("%s\n", buffer);
+	}
+
+	void Debug(const char *fmt, ...)
+	{
+		(void) fmt;
+	}
+
+	void ShowMap(const char *name)
+	{
+		I_Printf("fooing the thing on %s\n", name);
+	}
+
+	//
+	//  show an error message and terminate the program
+	//
+	void FatalError(const char *fmt, ...)
+	{
+		va_list arg_ptr;
+
+		static char buffer[MSG_BUF_LEN];
+
+		va_start(arg_ptr, fmt);
+		vsnprintf(buffer, MSG_BUF_LEN-1, fmt, arg_ptr);
+		va_end(arg_ptr);
+
+		buffer[MSG_BUF_LEN-1] = 0;
+
+		ajbsp::CloseWad();
+
+		I_Error("AJBSP: %s", buffer);
+	}
 };
+
 
 //
 // AJ_BuildNodes
@@ -51,21 +95,26 @@ static const nodebuildfuncs_t display_funcs =
 //
 bool AJ_BuildNodes(const char *filename, const char *outname)
 {
-	L_WriteDebug("AJ_BuildNodes: STARTED\n");
-	L_WriteDebug("# source: '%s'\n", filename);
-	L_WriteDebug("#   dest:  '%s'\n", outname);
+	I_Debugf("AJ_BuildNodes: STARTED\n");
+	I_Debugf("# source: '%s'\n", filename);
+	I_Debugf("#   dest: '%s'\n", outname);
 
-	int ret = AJBSP_Build(filename, outname, &display_funcs);
+	ec_buildinfo_t info;
 
-	if (ret != 0)
+	ajbsp::SetInfo(&info);
+
+	ajbsp::OpenWad(filename);
+	ajbsp::CreateXWA(outname);
+
+	for (int i = 0 ; i < ajbsp::LevelsInWad() ; i++)
 	{
-		L_WriteDebug("AJ_BuildNodes: FAILED\n");
-
-		return false;
+		ajbsp::BuildLevel(i);
 	}
 
-	L_WriteDebug("AJ_BuildNodes: SUCCESS\n");
+	ajbsp::FinishXWA();
+	ajbsp::CloseWad();
 
+	I_Debugf("AJ_BuildNodes: FINISHED\n");
 	return true;
 }
 
