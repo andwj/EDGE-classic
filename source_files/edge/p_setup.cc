@@ -1249,10 +1249,10 @@ static void LoadXGL3Nodes(int lumpnum)
 		side = (int)(*td);
 		td += 1;
 
-		if (v1num < (uint32_t)numvertexes)
+		if (v1num < (uint32_t)oVerts)
 			seg->v1 = &vertexes[v1num];
 		else
-			seg->v1 = &gl_vertexes[v1num - numvertexes];
+			seg->v1 = &gl_vertexes[v1num - oVerts];
 
 		seg->side = side ? 1 : 0;
 
