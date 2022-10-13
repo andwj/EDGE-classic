@@ -86,6 +86,7 @@ public:
 	std::vector<int> colmap_lumps;
 	std::vector<int> tx_lumps;
 	std::vector<int> hires_lumps;
+	std::vector<int> xgl_lumps;
 
 	// level markers and skin markers
 	std::vector<int> level_markers;
@@ -116,7 +117,7 @@ public:
 public:
 	wad_file_c() :
 		sprite_lumps(), flat_lumps(), patch_lumps(),
-		colmap_lumps(), tx_lumps(), hires_lumps(),
+		colmap_lumps(), tx_lumps(), hires_lumps(), xgl_lumps(),
 		level_markers(), skin_markers(),
 		wadtex(),
 		deh_lump(-1), coal_apis(-1), coal_huds(-1),
@@ -141,12 +142,14 @@ typedef enum
 	LMKIND_Marker = 3,  // X_START, X_END, S_SKIN, level name
 	LMKIND_WadTex = 6,  // palette, pnames, texture1/2
 	LMKIND_DDFRTS = 10, // DDF, RTS, DEHACKED lump
+
 	LMKIND_TX     = 14,
 	LMKIND_Colmap = 15,
 	LMKIND_Flat   = 16,
 	LMKIND_Sprite = 17,
 	LMKIND_Patch  = 18,
-	LMKIND_HiRes  = 19 
+	LMKIND_HiRes  = 19,
+	LMKIND_XGL    = 20,
 }
 lump_kind_e;
 
@@ -189,6 +192,7 @@ static bool within_patch_list;
 static bool within_colmap_list;
 static bool within_tex_list;
 static bool within_hires_list;
+static bool within_xgl_list;
 
 //
 // Is the name a sprite list start flag?
@@ -324,6 +328,19 @@ static bool IsHI_START(char *name)
 static bool IsHI_END(char *name)
 {
 	return (strncmp(name, "HI_END", 8) == 0);
+}
+
+//
+// Is the name a XGL nodes start/end flag?
+//
+static bool IsXG_START(char *name)
+{
+	return (strncmp(name, "XG_START", 8) == 0);
+}
+
+static bool IsXG_END(char *name)
+{
+	return (strncmp(name, "XG_END", 8) == 0);
 }
 
 //
@@ -687,6 +704,21 @@ static void AddLump(data_file_c *df, const char *name, int pos, int size, int fi
 		within_hires_list = false;
 		return;
 	}
+	else if (IsXG_START(lump_p->name))
+	{
+		lump_p->kind = LMKIND_Marker;
+		within_xgl_list = true;
+		return;
+	}
+	else if (IsXG_END(lump_p->name))
+	{
+		if (!within_xgl_list)
+			I_Warning("Unexpected XG_END marker in wad.\n");
+
+		lump_p->kind = LMKIND_Marker;
+		within_xgl_list = false;
+		return;
+	}
 
 	// ignore zero size lumps or dummy markers
 	if (lump_p->size == 0 || IsDummySF(lump_p->name))
@@ -729,6 +761,12 @@ static void AddLump(data_file_c *df, const char *name, int pos, int size, int fi
 	{
 		lump_p->kind = LMKIND_HiRes;
 		wad->hires_lumps.push_back(lump);
+	}
+
+	if (within_xgl_list)
+	{
+		lump_p->kind = LMKIND_XGL;
+		wad->xgl_lumps.push_back(lump);
 	}
 }
 
@@ -1063,6 +1101,7 @@ void ProcessWad(data_file_c *df, size_t file_index)
 	within_sprite_list = within_flat_list   = false;
 	within_patch_list  = within_colmap_list = false;
 	within_tex_list    = within_hires_list  = false;
+	within_xgl_list    =                      false;
 
 	raw_wad_header_t header;
 
@@ -1116,6 +1155,7 @@ void ProcessWad(data_file_c *df, size_t file_index)
 	if (within_colmap_list) I_Warning("Missing C_END marker in %s.\n", filename);
 	if (within_tex_list)    I_Warning("Missing TX_END marker in %s.\n", filename);
 	if (within_hires_list)  I_Warning("Missing HI_END marker in %s.\n", filename);
+	if (within_xgl_list)    I_Warning("Missing XG_END marker in %s.\n", filename);
 
 	SortLumps();
 
