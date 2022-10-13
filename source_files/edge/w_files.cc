@@ -138,7 +138,7 @@ static void ProcessFile(data_file_c *df)
 	if (df->kind == FLKIND_RTS || df->kind == FLKIND_DDF)
 		return;
 
-	if (df->kind <= FLKIND_GWad)
+	if (df->kind <= FLKIND_XWad)
 	{
 		epi::file_c *file = epi::FS_Open(filename, epi::file_c::ACCESS_READ | epi::file_c::ACCESS_BINARY);
 		if (file == NULL)
@@ -218,7 +218,7 @@ void W_BuildNodes(void)
 
 			if (! gwa_filename.empty())
 			{
-				data_file_c *new_df = new data_file_c(gwa_filename.c_str(), FLKIND_GWad);
+				data_file_c *new_df = new data_file_c(gwa_filename.c_str(), FLKIND_XWad);
 				ProcessFile(new_df);
 			}
 		}
@@ -519,7 +519,7 @@ static const char *FileKindString(filekind_e kind)
 		case FLKIND_IWad:   return "iwad";
 		case FLKIND_PWad:   return "pwad";
 		case FLKIND_EWad:   return "edge";
-		case FLKIND_GWad:   return "gwa";
+		case FLKIND_XWad:   return "xwa";
 
 		case FLKIND_Folder: return "DIR";
 		case FLKIND_PK3:    return "pk3";

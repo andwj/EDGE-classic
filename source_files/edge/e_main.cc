@@ -895,8 +895,8 @@ static void PurgeCache(void)
 
 	std::vector<epi::dir_entry_c> fsd;
 
-	// GWA should be the only filetypes we need to worry about now that HWA files are internal
-	if (!FS_ReadDir(fsd, cache_dir.c_str(), "*.gwa"))
+	// XWA should be the only filetypes we need to worry about now that HWA files are internal
+	if (!FS_ReadDir(fsd, cache_dir.c_str(), "*.xwa"))
 	{
 		I_Error("PurgeCache: Failed to read '%s' directory!\n", cache_dir.c_str());
 	}
@@ -922,11 +922,10 @@ static void PurgeCache(void)
 
 static void IdentifyVersion(void)
 {
-    std::string reqwad(epi::PATH_Join(game_dir.c_str(), REQUIREDWAD "." EDGEWADEXT));
+    std::string reqwad(epi::PATH_Join(game_dir.c_str(), REQUIREDWAD ".wad"));
 
     if (! epi::FS_Access(reqwad.c_str(), epi::file_c::ACCESS_READ))
-        I_Error("IdentifyVersion: Could not find required %s.%s!\n", 
-            REQUIREDWAD, EDGEWADEXT);
+        I_Error("IdentifyVersion: Could not find required %s!\n", REQUIREDWAD ".wad");
 
     W_AddFilename(reqwad.c_str(), FLKIND_EWad);
 
@@ -998,7 +997,7 @@ static void IdentifyVersion(void)
         std::string ext = epi::PATH_GetExtension(iwad_par.c_str());
         if (ext.empty())
         {
-            fn += ("." EDGEWADEXT);
+            fn += ".wad";
         }
 
         // If no directory given use the IWAD directory

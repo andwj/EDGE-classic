@@ -109,9 +109,6 @@ public:
 	int animated, switches;
 
 	// MD5 hash of the contents of the WAD directory.
-	// This is used to disambiguate cached GWA/HWA filenames.
-	epi::md5hash_c dir_md5;
-
 	std::string md5_string;
 
 public:
@@ -122,7 +119,7 @@ public:
 		wadtex(),
 		deh_lump(-1), coal_apis(-1), coal_huds(-1),
 		animated(-1), switches(-1),
-		dir_md5(), md5_string()
+		md5_string()
 	{
 		for (int d = 0; d < NUM_DDF_READERS; d++)
 			ddf_lumps[d] = -1;
@@ -770,51 +767,6 @@ static void AddLump(data_file_c *df, const char *name, int pos, int size, int fi
 	}
 }
 
-// We need this to distinguish between old versus new .gwa cache files to trigger a rebuild
-bool W_CheckForXGLNodes(std::string filename)
-{
-	int length;
-	bool xgl_nodes_found = false;
-
-	epi::file_c *file = epi::FS_Open(filename.c_str(), epi::file_c::ACCESS_READ | epi::file_c::ACCESS_BINARY);
-
-	if (file == NULL)
-	{
-		I_Error("W_CheckForXGLNodes: Received null file_c pointer!\n");
-	}
-
-	raw_wad_header_t header;
-
-	// WAD file
-	// TODO: handle Read failure
-    file->Read(&header, sizeof(raw_wad_header_t));
-
-	header.num_entries = EPI_LE_S32(header.num_entries);
-	header.dir_start   = EPI_LE_S32(header.dir_start);
-
-	length = header.num_entries * sizeof(raw_wad_entry_t);
-
-    raw_wad_entry_t *raw_info = new raw_wad_entry_t[header.num_entries];
-
-    file->Seek(header.dir_start, epi::file_c::SEEKPOINT_START);
-	// TODO: handle Read failure
-    file->Read(raw_info, length);
-
-	unsigned int i;
-	for (i=0 ; i < header.num_entries ; i++)
-	{
-		if (strncmp("XGLNODES", raw_info[i].name, 8) == 0)
-		{
-			xgl_nodes_found = true;
-			break;
-		}
-	}
-
-	delete[] raw_info;
-	delete file;
-
-	return xgl_nodes_found;
-}
 
 //
 // CheckForLevel
@@ -873,102 +825,6 @@ static void CheckForLevel(wad_file_c *wad, int lump, const char *name,
 		wad->level_markers.push_back(lump);
 		return;
 	}
-}
-
-// FIXME why is this unused ??
-static void ComputeFileMD5(epi::md5hash_c& md5, epi::file_c *file)
-{
-	int length = file->GetLength();
-
-	if (length <= 0)
-		return;
-
-	byte *buffer = new byte[length];
-
-	// TODO: handle Read failure
-	file->Read(buffer, length);
-	
-	md5.Compute(buffer, length);
-
-	delete[] buffer;
-}
-
-static bool FindCacheFilename (std::string& out_name,
-		const char *filename, epi::md5hash_c& dir_md5,
-		const char *extension)
-{
-	std::string wad_dir;
-	std::string md5_file_string;
-	std::string local_name;
-	std::string cache_name;
-
-	// Get the directory which the wad is currently stored
-	wad_dir = epi::PATH_GetDir(filename);
-
-	// MD5 string used for files in the cache directory
-	md5_file_string = epi::STR_Format("-%02X%02X%02X-%02X%02X%02X",
-		dir_md5.hash[0], dir_md5.hash[1],
-		dir_md5.hash[2], dir_md5.hash[3],
-		dir_md5.hash[4], dir_md5.hash[5]);
-
-	// Determine the full path filename for "local" (same-directory) version
-	local_name = epi::PATH_GetBasename(filename);
-	local_name += (".");
-	local_name += (extension);
-
-	local_name = epi::PATH_Join(wad_dir.c_str(), local_name.c_str());
-
-	// Determine the full path filename for the cached version
-	cache_name = epi::PATH_GetBasename(filename);
-	cache_name += (md5_file_string);
-	cache_name += (".");
-	cache_name += (extension);
-
-	cache_name = epi::PATH_Join(cache_dir.c_str(), cache_name.c_str());
-
-	I_Debugf("FindCacheFilename: local_name = '%s'\n", local_name.c_str());
-	I_Debugf("FindCacheFilename: cache_name = '%s'\n", cache_name.c_str());
-	
-	// Check for the existance of the local and cached dir files
-	bool has_local = epi::FS_Access(local_name.c_str(), epi::file_c::ACCESS_READ);
-	bool has_cache = epi::FS_Access(cache_name.c_str(), epi::file_c::ACCESS_READ);
-
-	// If both exist, use the local one.
-	// If neither exist, create one in the cache directory.
-
-	// Check whether the waddir gwa is out of date
-	if (has_local) 
-		has_local = std::filesystem::last_write_time(local_name) > std::filesystem::last_write_time(filename);
-
-	// Check whether the cached gwa is out of date
-	if (has_cache) 
-		has_cache = std::filesystem::last_write_time(cache_name) > std::filesystem::last_write_time(filename);
-
-	I_Debugf("FindCacheFilename: has_local=%s  has_cache=%s\n",
-		has_local ? "YES" : "NO", has_cache ? "YES" : "NO");
-
-	if (has_local)
-	{
-		if (W_CheckForXGLNodes(local_name))
-		{
-			out_name = local_name;
-			return true;
-		}
-	}
-	else if (has_cache)
-	{
-		if (W_CheckForXGLNodes(cache_name))
-		{
-			out_name = cache_name;
-			return true;
-		}
-		else
-			epi::FS_Delete(cache_name.c_str());
-	}
-
-	// Neither is valid so create one in the cached directory
-	out_name = cache_name;
-	return false;
 }
 
 
@@ -1162,17 +1018,13 @@ void ProcessWad(data_file_c *df, size_t file_index)
 	SortSpriteLumps(wad);
 
 	// compute MD5 hash over wad directory
-	wad->dir_md5.Compute((const byte *)raw_info, length);
+	epi::md5hash_c dir_md5;
+
+	dir_md5.Compute((const byte *)raw_info, length);
 
 	wad->md5_string = epi::STR_Format("%02x%02x%02x%02x%02x%02x%02x%02x", 
-			wad->dir_md5.hash[0],  wad->dir_md5.hash[1],
-			wad->dir_md5.hash[2],  wad->dir_md5.hash[3],
-			wad->dir_md5.hash[4],  wad->dir_md5.hash[5],
-			wad->dir_md5.hash[6],  wad->dir_md5.hash[7],
-			wad->dir_md5.hash[8],  wad->dir_md5.hash[9],
-			wad->dir_md5.hash[10], wad->dir_md5.hash[11],
-			wad->dir_md5.hash[12], wad->dir_md5.hash[13],
-			wad->dir_md5.hash[14], wad->dir_md5.hash[15]);
+			dir_md5.hash[0], dir_md5.hash[1], dir_md5.hash[2], dir_md5.hash[3],
+			dir_md5.hash[4], dir_md5.hash[5], dir_md5.hash[6], dir_md5.hash[7]);
 
 	I_Debugf("   md5hash = %s\n", wad->md5_string.c_str());
 
@@ -1187,21 +1039,38 @@ std::string W_BuildNodesForWad(data_file_c *df)
 	if (df->wad->level_markers.empty())
 		return std::string();
 
-	std::string gwa_filename;
+	// determine XWA filename in the cache
+	std::string cache_name = epi::PATH_GetBasename(df->name.c_str());
+	cache_name += "-";
+	cache_name += df->wad->md5_string;
+	cache_name += ".xwa";
 
-	bool exists = FindCacheFilename(gwa_filename, df->name.c_str(), df->wad->dir_md5, EDGEGWAEXT);
+	std::string xwa_filename = epi::PATH_Join(cache_dir.c_str(), cache_name.c_str());
 
-	I_Debugf("Actual_GWA_filename: %s\n", gwa_filename.c_str());
+	I_Debugf("XWA filename: %s\n", xwa_filename.c_str());
+
+	// check whether an XWA file for this map exists in the cache
+	bool exists = epi::FS_Access(xwa_filename.c_str(), epi::file_c::ACCESS_READ);
+
+	// check whether the cached XWA is out of date
+	if (exists)
+	{
+		if (std::filesystem::last_write_time(xwa_filename) <= std::filesystem::last_write_time(df->name))
+		{
+			// yes, but it will be overwritten by AJ_BuildNodes
+			exists = false;
+		}
+	}
 
 	if (! exists)
 	{
-		I_Printf("Building GL Nodes for: %s\n", df->name.c_str());
+		I_Printf("Building XGL nodes for: %s\n", df->name.c_str());
 
-		if (! AJ_BuildNodes(df->name.c_str(), gwa_filename.c_str()))
-			I_Error("Failed to build GL nodes for: %s\n", df->name.c_str());
+		if (! AJ_BuildNodes(df->name.c_str(), xwa_filename.c_str()))
+			I_Error("Failed to build XGL nodes for: %s\n", df->name.c_str());
 	}
 
-	return gwa_filename;
+	return xwa_filename;
 }
 
 
@@ -1211,7 +1080,7 @@ void W_ReadUMAPINFOLumps(void)
 	p = W_CheckNumForName("UMAPINFO");
 	if (p == -1) //no UMAPINFO
 		return;
-	
+
 	L_WriteDebug("parsing UMAPINFO lump\n");
 
 	int length;
