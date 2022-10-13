@@ -1444,6 +1444,7 @@ epi::file_c *W_OpenLump(int lump)
 	return new epi::sub_file_c(df->file, l->position, l->size);
 }
 
+
 epi::file_c *W_OpenLump(const char *name)
 {
 	return W_OpenLump(W_GetNumForName(name));
@@ -1577,7 +1578,7 @@ int W_CheckNumForName_GFX(const char *name)
 	buf[i] = 0;
 
 	// search backwards
-	for (i = (int)lumpinfo.size()-1; i >= 0; i--)
+	for (i = (int)lumpinfo.size()-1 ; i >= 0 ; i--)
 	{
 		if (lumpinfo[i].kind == LMKIND_Normal ||
 		    lumpinfo[i].kind == LMKIND_Sprite ||
@@ -1590,6 +1591,38 @@ int W_CheckNumForName_GFX(const char *name)
 
 	return -1; // not found
 }
+
+
+int W_CheckNumForName_XGL(const char *name)
+{
+	// limit search to stuff between XG_START and XG_END.
+
+	int i;
+	char buf[9];
+
+	if (strlen(name) > 8)
+	{
+		I_Warning("W_CheckNumForName: Name '%s' longer than 8 chars!\n", name);
+		return -1;
+	}
+
+	for (i = 0; name[i]; i++)
+	{
+		buf[i] = toupper(name[i]);
+	}
+	buf[i] = 0;
+
+	// search backwards
+	for (i = (int)lumpinfo.size()-1 ; i >= 0 ; i--)
+	{
+		if (lumpinfo[i].kind == LMKIND_XGL)
+			if (strncmp(lumpinfo[i].name, buf, 8) == 0)
+				return i;
+	}
+
+	return -1; // not found
+}
+
 
 //
 // W_GetNumForName
