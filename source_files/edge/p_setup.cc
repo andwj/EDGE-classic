@@ -1142,25 +1142,20 @@ static void AssignSubsectorsToSectors()
 // our built-in AJBSP produces now
 static void LoadXGL3Nodes(int lumpnum)
 {
-	int i, xglumpnum = 0, xglen = 0;
+	int i, xglen = 0;
 	byte *xgldata;
 
 	I_Debugf("LoadXGL3Nodes:\n");
 
-	if (W_VerifyLumpName(lumpnum, "XGLNODES"))
-		xglumpnum = lumpnum;
-	else
-		I_Error("LoadXGL3Nodes: Couldn't find XGLNODES lump\n");
-
-	xglen = W_LumpLength(xglumpnum);
-	xgldata = (byte *)W_CacheLumpNum(xglumpnum);
+	xglen = W_LumpLength(lumpnum);
+	xgldata = (byte *)W_CacheLumpNum(lumpnum);
 	if (!xgldata)
-		I_Error("LoadXGL3Nodes: Couldn't load XGLNODES lump\n");
+		I_Error("LoadXGL3Nodes: Couldn't load lump\n");
 
 	if (xglen < 12)
 	{
 		W_DoneWithLump(xgldata);
-		I_Error("LoadXGL3Nodes: XGLNODES lump too short\n");
+		I_Error("LoadXGL3Nodes: lump too short\n");
 	}
 
 	if(!memcmp(xgldata, "XGL3", 4))

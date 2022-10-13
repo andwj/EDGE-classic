@@ -431,6 +431,10 @@ struct Compare_lump_pred
 		const lumpinfo_t& C = lumpinfo[A];
 		const lumpinfo_t& D = lumpinfo[B];
 
+		// -AJA- 2022: AWFUL HACK for xwa files (FIXME)
+		if ((C.kind == LMKIND_XGL) != (D.kind == LMKIND_XGL))
+			return C.kind == LMKIND_XGL;
+
 		// increasing name
 		int cmp = strcmp(C.name, D.name);
 		if (cmp != 0) return (cmp < 0);
